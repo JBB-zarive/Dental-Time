@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="theme-color" content="#7F77DD"/>
+  <title>Mon appareil — Chloé</title>
+  <style>
+/* Chloé — Suivi appareil dentaire — style.css */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --purple:      #7F77DD;
+  --purple-dark: #534AB7;
+  --purple-deep: #3C3489;
+  --purple-pale: #EEEDFE;
+  --green-pale:  #EAF3DE;
+  --green-text:  #27500A;
+  --amber-pale:  #FAEEDA;
+  --amber-text:  #633806;
+  --gray-pale:   #F1EFE8;
+  --gray-text:   #5F5E5A;
+  --surface:     #FFFFFF;
+  --surface-2:   #F7F6FF;
+  --border:      #E8E6FA;
+  --text:        #3C3489;
+  --text-muted:  #9B9AAD;
+  --bg:          #F0EFF8;
+  --radius-sm:   12px;
+  --radius-md:   18px;
+  --radius-lg:   24px;
+  --radius-xl:   28px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding-bottom: 2.5rem;
+}
+
+/* ── Header ── */
+.hdr {
+  background: var(--purple);
+  padding: 1.75rem 1.25rem 1.4rem;
+  border-radius: 0 0 32px 32px;
+  text-align: center;
+  color: #fff;
+}
+.hdr-emoji { font-size: 44px; line-height: 1; margin-bottom: 8px; }
+.hdr h1    { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+.hdr p     { font-size: 14px; margin-top: 4px; opacity: .85; }
+
+/* ── Cantine banner ── */
+.cantine-banner {
+  display: none;
+  margin: .85rem 1rem 0;
+  background: #FFF3CD;
+  color: #856404;
+  border: 1.5px solid #FFD966;
+  border-radius: var(--radius-md);
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ── Timer card ── */
+.timer-card {
+  margin: 1rem 1rem 0;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border);
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+}
+.timer-lbl {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  margin-bottom: 8px;
+}
+.timer {
+  font-size: 52px;
+  font-weight: 800;
+  color: var(--purple-deep);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 7px 20px;
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.badge-on  { background: var(--green-pale); color: var(--green-text); }
+.badge-off { background: var(--gray-pale);  color: var(--gray-text); }
+
+/* ── Stats row ── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: .9rem 1rem 0;
+}
+.sbox {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  padding: .8rem .4rem;
+  text-align: center;
+}
+.sval { font-size: 23px; font-weight: 800; color: var(--purple-deep); }
+.slbl { font-size: 10px; color: var(--text-muted); margin-top: 4px; line-height: 1.3; }
+
+/* ── Buttons ── */
+.btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 1rem 1rem 0;
+}
+.btn {
+  border: none;
+  border-radius: var(--radius-xl);
+  padding: 1.2rem .6rem;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: transform .12s, filter .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active:not(:disabled) { transform: scale(.93); }
+.btn:disabled { opacity: .28; cursor: default; }
+
+.btn-on {
+  background: var(--purple);
+  color: #fff;
+  box-shadow: 0 8px 24px #7F77DD44;
+}
+.btn-on:not(:disabled):hover { background: var(--purple-dark); }
+
+.btn-off {
+  background: #F0997B;
+  color: #fff;
+  box-shadow: 0 8px 24px #F0997B44;
+}
+.btn-off:not(:disabled):hover { background: #D85A30; }
+
+/* ── Sections ── */
+.sec { margin: 1.4rem 1rem 0; }
+.sec-ttl {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  margin-bottom: 10px;
+}
+
+/* ── Calendar ── */
+.cal-wrap {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border);
+  padding: 1rem;
+}
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cdn { font-size: 11px; color: var(--text-muted); text-align: center; padding: 2px 0 6px; font-weight: 700; }
+.cc  { aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.cc.empty  { background: transparent; }
+.cc.future { background: #F0EFF8; color: #C0BFB8; }
+.cc.nodata { background: var(--surface-2); color: #C0BFB8; }
+.cc.s0 { background: #FFCDD2; color: #B71C1C; }
+.cc.s1 { background: #FFE0B2; color: #BF360C; }
+.cc.s2 { background: #FFF9C4; color: #827717; }
+.cc.s3 { background: #DCEDC8; color: #33691E; }
+.cc.s4 { background: #8BC34A; color: #fff; }
+.cc.s5 { background: #388E3C; color: #fff; }
+.cc.tr { outline: 2.5px solid var(--purple); outline-offset: 2px; }
+
+.school-chip {
+  display: none;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--purple-dark);
+  background: var(--purple-pale);
+  border-radius: 10px;
+  padding: 8px 12px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.leg    { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); font-weight: 600; }
+.ldot   { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+
+/* ── Weekly bars ── */
+.wbar-wrap {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border);
+  padding: 1rem;
+}
+.wbar  { display: flex; align-items: flex-end; gap: 6px; height: 68px; }
+.wcol  { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+.wb    { width: 100%; border-radius: 5px 5px 0 0; min-height: 4px; }
+.wl    { font-size: 10px; color: var(--text-muted); font-weight: 700; }
+.goal-lbl { font-size: 12px; color: var(--text-muted); margin-top: 8px; text-align: right; font-weight: 600; }
+
+/* ── History ── */
+.hist-list { display: flex; flex-direction: column; gap: 7px; }
+.hi {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  font-size: 13px;
+}
+.hi.live    { border-color: var(--purple); }
+.hi.cantine { border-style: dashed; border-color: #FFD966; background: #FFFDF0; }
+.ht { color: var(--text-muted); font-size: 12px; font-weight: 600; }
+.hd { font-weight: 800; color: var(--purple-deep); }
+.hp { font-size: 12px; padding: 4px 10px; border-radius: 99px; font-weight: 700; }
+.hp-good { background: var(--green-pale); color: var(--green-text); }
+.hp-meh  { background: var(--amber-pale); color: var(--amber-text); }
+.hp-none { background: var(--gray-pale);  color: var(--gray-text); }
+.hp-live { background: var(--purple-pale); color: var(--purple-deep); }
+.hp-cant { background: #FFF3CD; color: #856404; }
+.empty-msg {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 1.4rem 0;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  font-weight: 600;
+}
+
+/* ── Responsive ── */
+@media (max-width: 360px) {
+  .timer  { font-size: 40px; }
+  .btn    { font-size: 14px; padding: 1rem .4rem; }
+  .sval   { font-size: 19px; }
+}
+
+/* ── Dark mode ── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface:   #1E1D2E;
+    --surface-2: #2A293C;
+    --border:    #3A3858;
+    --text:      #CECBF6;
+    --text-muted:#7A79A0;
+    --bg:        #15142A;
+  }
+  .cc.future, .cc.nodata { background: #2A293C; }
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  #app { padding-bottom: calc(2.5rem + env(safe-area-inset-bottom)); }
+}
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <header class="hdr">
+    <div class="hdr-emoji">🦷</div>
+    <h1>Mon appareil dentaire</h1>
+    <p>Chloé — <span id="hdate"></span></p>
+  </header>
+
+  <div class="cantine-banner" id="cbanner">
+    🏫 C'est l'heure de la cantine ! La pause est comptée automatiquement.
+  </div>
+
+  <section class="timer-card">
+    <div class="timer-lbl" id="tlbl">Temps avec l'appareil aujourd'hui</div>
+    <div class="timer" id="timer">00:00:00</div>
+    <div class="badge badge-off" id="badge">Appareil retiré</div>
+  </section>
+
+  <div class="stats">
+    <div class="sbox"><div class="sval" id="spts">0</div><div class="slbl">pts aujourd'hui</div></div>
+    <div class="sbox"><div class="sval" id="sstreak">0 🔥</div><div class="slbl">jours de suite</div></div>
+    <div class="sbox"><div class="sval" id="savg">0</div><div class="slbl">moy. semaine</div></div>
+  </div>
+
+  <div class="btns">
+    <button class="btn btn-on"  id="bon">😊 Je mets<br>mon appareil</button>
+    <button class="btn btn-off" id="boff" disabled>😴 Je retire<br>mon appareil</button>
+  </div>
+
+  <div class="sec">
+    <div class="sec-ttl">Calendrier du mois</div>
+    <div class="cal-wrap">
+      <div class="cal-grid" id="calgrid"></div>
+      <div class="school-chip" id="school-chip"></div>
+      <div class="legend">
+        <div class="leg"><span class="ldot" style="background:#FFCDD2"></span>Peu</div>
+        <div class="leg"><span class="ldot" style="background:#FFE0B2"></span>Moyen</div>
+        <div class="leg"><span class="ldot" style="background:#FFF9C4"></span>Bien</div>
+        <div class="leg"><span class="ldot" style="background:#DCEDC8"></span>Très bien</div>
+        <div class="leg"><span class="ldot" style="background:#8BC34A"></span>Super</div>
+        <div class="leg"><span class="ldot" style="background:#388E3C"></span>⭐ Parfait</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-ttl">Cette semaine</div>
+    <div class="wbar-wrap">
+      <div class="wbar" id="wbar"></div>
+      <div class="goal-lbl">Objectif : <b>18</b> pts / jour</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-ttl">Sessions d'aujourd'hui</div>
+    <div class="hist-list" id="hlist">
+      <p class="empty-msg">Aucune session pour l'instant 😊</p>
+    </div>
+  </div>
+
+</div>
+<script>
+/* Chloé — Suivi appareil dentaire — app.js */
+'use strict';
+
+const KEY  = 'chloe_dental_v1';
+const GOAL = 18;
+
+const SLOTS = [
+  {f:0,  t:7,  p:2},
+  {f:7,  t:12, p:3},
+  {f:12, t:14, p:0},
+  {f:14, t:19, p:3},
+  {f:19, t:21, p:0},
+  {f:21, t:23, p:1},
+  {f:23, t:24, p:2},
+];
+
+const HOLIDAYS_ZB = [
+  ['2025-07-05','2025-08-31'],
+  ['2025-10-18','2025-11-02'],
+  ['2025-12-20','2026-01-04'],
+  ['2026-02-14','2026-03-01'],
+  ['2026-04-11','2026-04-26'],
+  ['2026-05-13','2026-05-17'],
+  ['2026-07-04','2027-08-31'],
+];
+
+const FERIES = [
+  '2025-11-11','2025-12-25','2026-01-01',
+  '2026-04-06','2026-05-01','2026-05-08',
+  '2026-05-14','2026-05-25',
+];
+
+const MONTHS  = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const DAYS    = ['Di','Lu','Ma','Me','Je','Ve','Sa'];
+const S_COLS  = ['#FFCDD2','#FFE0B2','#FFF9C4','#DCEDC8','#8BC34A','#388E3C'];
+const S_CLS   = ['s0','s1','s2','s3','s4','s5'];
+
+let st   = loadSt();
+let live = st.wearingStart ? new Date(st.wearingStart) : null;
+let tid  = null;
+
+/* ── Persistence ── */
+function loadSt() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {sessions:{},wearingStart:null}; }
+  catch(e) { return {sessions:{},wearingStart:null}; }
+}
+function saveSt() { localStorage.setItem(KEY, JSON.stringify(st)); }
+
+/* ── Date helpers ── */
+function dk(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function today() { return dk(new Date()); }
+
+/* ── School calendar ── */
+function isHol(d) {
+  const k = dk(d);
+  if (FERIES.includes(k)) return true;
+  for (const [a,b] of HOLIDAYS_ZB) if (k >= a && k <= b) return true;
+  return false;
+}
+function isSchool(d) {
+  const w = d.getDay();
+  return w > 0 && w < 6 && !isHol(d);
+}
+
+/* ── Points ── */
+function pph(h) {
+  for (const s of SLOTS) if (h >= s.f && h < s.t) return s.p;
+  return 1;
+}
+function calcPts(s0, e0) {
+  let p = 0, c = s0;
+  while (c < e0) {
+    const h  = new Date(c).getHours();
+    const nh = new Date(c); nh.setMinutes(0,0,0); nh.setHours(h+1);
+    const se = Math.min(nh.getTime(), e0);
+    p += pph(h) * (se - c) / 3600000;
+    c  = se;
+  }
+  return p;
+}
+
+/* ── Derived ── */
+function sesForKey(k) { return st.sessions[k] || []; }
+function ptsForKey(k) { return sesForKey(k).reduce((a,s) => a + s.pts, 0); }
+
+function todayMs() {
+  let ms = sesForKey(today()).reduce((a,s) => a + (s.endMs - s.startMs), 0);
+  if (live) ms += Date.now() - live.getTime();
+  return ms;
+}
+function todayPts() {
+  let p = ptsForKey(today());
+  if (live) p += calcPts(live.getTime(), Date.now());
+  return p;
+}
+
+function scIdx(p) {
+  const r = p / GOAL;
+  if (r < .35) return 0; if (r < .55) return 1; if (r < .70) return 2;
+  if (r < .85) return 3; if (r < .97) return 4; return 5;
+}
+
+function getStreak() {
+  let n = 0; const d = new Date();
+  for (let i = 0; i < 366; i++) {
+    const k = dk(d), p = k === today() ? todayPts() : ptsForKey(k);
+    if (p >= GOAL * .8) n++;
+    else if (k !== today()) break;
+    d.setDate(d.getDate() - 1);
+  }
+  return n;
+}
+function weekAvg() {
+  let t = 0, n = 0; const now = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now); d.setDate(d.getDate() - i);
+    const k = dk(d), p = k === today() ? todayPts() : ptsForKey(k);
+    if (st.sessions[k] || (k === today() && live)) { t += p; n++; }
+  }
+  return n ? Math.round(t / n) : 0;
+}
+function cantineAuto() {
+  if (!isSchool(new Date())) return false;
+  const k = today(), n12 = new Date(), n14 = new Date();
+  n12.setHours(12,0,0,0); n14.setHours(14,0,0,0);
+  const hasReal = sesForKey(k).some(s => s.startMs < n14.getTime() && s.endMs > n12.getTime());
+  const liveOk  = live && live.getTime() < n14.getTime() && Date.now() > n12.getTime();
+  return !hasReal && !liveOk;
+}
+
+/* ── Formatting ── */
+function fmtMs(ms) {
+  const s = Math.floor(ms/1000);
+  return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+function fmtDur(ms) {
+  const m = Math.floor(ms/60000);
+  return m < 60 ? `${m} min` : `${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`;
+}
+function fmtHM(d) {
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+/* ── Actions ── */
+function putOn() {
+  if (live) return;
+  live = new Date(); st.wearingStart = live.toISOString();
+  saveSt(); startTid(); render();
+}
+function takeOff() {
+  if (!live) return;
+  const e = Date.now(), s = live.getTime(), p = calcPts(s, e), k = dk(new Date(s));
+  if (!st.sessions[k]) st.sessions[k] = [];
+  st.sessions[k].push({ startMs:s, endMs:e, pts: Math.round(p*100)/100 });
+  st.wearingStart = null; live = null;
+  saveSt(); stopTid(); render();
+}
+
+/* ── Timer ── */
+function startTid() { stopTid(); tid = setInterval(tick, 1000); }
+function stopTid()  { if (tid) { clearInterval(tid); tid = null; } }
+function tick() {
+  document.getElementById('timer').textContent = fmtMs(todayMs());
+  document.getElementById('spts').textContent  = Math.round(todayPts());
+}
+
+/* ── Render ── */
+function render() {
+  const now = new Date(), h = now.getHours(), w = !!live;
+
+  document.getElementById('hdate').textContent =
+    `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+
+  document.getElementById('bon').disabled  = w;
+  document.getElementById('boff').disabled = !w;
+
+  const badge = document.getElementById('badge');
+  badge.textContent = w ? 'Appareil en bouche ✓' : 'Appareil retiré';
+  badge.className   = 'badge ' + (w ? 'badge-on' : 'badge-off');
+
+  document.getElementById('tlbl').textContent = w
+    ? "Aujourd'hui + session en cours"
+    : "Temps avec l'appareil aujourd'hui";
+
+  document.getElementById('timer').textContent   = fmtMs(todayMs());
+  document.getElementById('spts').textContent    = Math.round(todayPts());
+  document.getElementById('sstreak').textContent = getStreak() + ' 🔥';
+  document.getElementById('savg').textContent    = weekAvg();
+
+  const cb = document.getElementById('cbanner');
+  cb.style.display = (isSchool(now) && h >= 12 && h < 14 && !w) ? 'block' : 'none';
+
+  const sc = document.getElementById('school-chip');
+  if (isHol(now))       { sc.textContent = '🏖️ Vacances — profite bien !'; sc.style.display = 'block'; }
+  else if (isSchool(now)) { sc.textContent = '🏫 Jour d\'école · cantine 12h-14h auto'; sc.style.display = 'block'; }
+  else                   { sc.style.display = 'none'; }
+
+  renderCal(); renderWeek(); renderHist();
+}
+
+function renderCal() {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  const fd  = new Date(y, m, 1).getDay();
+  const dim = new Date(y, m+1, 0).getDate();
+  let html  = DAYS.map(d => `<div class="cdn">${d}</div>`).join('');
+  for (let i = 0; i < fd; i++) html += '<div class="cc empty"></div>';
+  for (let d = 1; d <= dim; d++) {
+    const date = new Date(y, m, d), k = dk(date), isT = k === today();
+    const fut  = date > now && !isT;
+    let cls = 'cc', p = 0;
+    if (fut) { cls += ' future'; }
+    else { p = isT ? todayPts() : ptsForKey(k); cls += ' ' + (p > 0 || st.sessions[k] ? S_CLS[scIdx(p)] : 'nodata'); }
+    if (isT) cls += ' tr';
+    html += `<div class="${cls}">${d}</div>`;
+  }
+  document.getElementById('calgrid').innerHTML = html;
+}
+
+function renderWeek() {
+  const now = new Date(); let html = '';
+  for (let i = 6; i >= 0; i--) {
+    const d  = new Date(now); d.setDate(d.getDate() - i);
+    const k  = dk(d), p = k === today() ? todayPts() : ptsForKey(k);
+    const pct = Math.min(p / GOAL, 1), ht = Math.max(4, Math.round(pct * 58));
+    html += `<div class="wcol"><div class="wb" style="height:${ht}px;background:${S_COLS[scIdx(p)]}"></div><div class="wl">${DAYS[d.getDay()]}</div></div>`;
+  }
+  document.getElementById('wbar').innerHTML = html;
+}
+
+function renderHist() {
+  const el   = document.getElementById('hlist');
+  const ses  = sesForKey(today());
+  const canto = cantineAuto();
+  if (!ses.length && !live && !canto) {
+    el.innerHTML = '<p class="empty-msg">Aucune session pour l\'instant 😊</p>';
+    return;
+  }
+  let html = '';
+  ses.forEach(s => {
+    const a = new Date(s.startMs), b = new Date(s.endMs);
+    const pr = Math.round(s.pts * 10) / 10;
+    const cls = s.pts >= 2 ? 'hp-good' : s.pts >= .5 ? 'hp-meh' : 'hp-none';
+    html += `<div class="hi"><span class="ht">${fmtHM(a)} → ${fmtHM(b)}</span><span class="hd">${fmtDur(s.endMs-s.startMs)}</span><span class="hp ${cls}">+${pr} pts</span></div>`;
+  });
+  if (canto) html += `<div class="hi cantine"><span class="ht">🏫 12:00 → 14:00</span><span class="hd">Cantine</span><span class="hp hp-cant">auto</span></div>`;
+  if (live)  html += `<div class="hi live"><span class="ht">${fmtHM(live)} → en cours…</span><span class="hd" style="color:#7F77DD">⏱</span><span class="hp hp-live">en cours</span></div>`;
+  el.innerHTML = html;
+}
+
+/* ── Init ── */
+function init() {
+  st   = loadSt();
+  if (!st.sessions)     st.sessions     = {};
+  if (!st.wearingStart) st.wearingStart = null;
+  live = st.wearingStart ? new Date(st.wearingStart) : null;
+
+  document.getElementById('bon').addEventListener('click',  putOn);
+  document.getElementById('boff').addEventListener('click', takeOff);
+
+  render();
+  if (live) startTid();
+  setInterval(render, 60000);
+
+  (function midnight() {
+    const n = new Date(); n.setDate(n.getDate()+1); n.setHours(0,0,5,0);
+    setTimeout(() => { render(); midnight(); }, n - new Date());
+  })();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
