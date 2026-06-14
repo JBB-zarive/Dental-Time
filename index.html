@@ -1,89 +1,77 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="theme-color" content="#7F77DD" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="theme-color" content="#7F77DD"/>
   <title>Mon appareil — Chloé</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="manifest" href="manifest.json"/>
 </head>
 <body>
-  <div id="app">
+<div id="app">
 
-    <!-- HEADER -->
-    <header class="header">
-      <div class="header-emoji">🦷</div>
-      <h1 class="header-title">Mon appareil dentaire</h1>
-      <p class="header-subtitle">Chloé — <span id="header-date"></span></p>
-    </header>
+  <header class="hdr">
+    <div class="hdr-emoji">🦷</div>
+    <h1>Mon appareil dentaire</h1>
+    <p>Chloé — <span id="hdate"></span></p>
+  </header>
 
-    <!-- TIMER CARD -->
-    <section class="card status-card">
-      <p class="status-label" id="status-label">Temps avec l'appareil aujourd'hui</p>
-      <div class="timer-display" id="timer">00:00:00</div>
-      <span class="status-badge badge-off" id="status-badge">Appareil retiré</span>
-    </section>
+  <div class="cantine-banner" id="cbanner">
+    🏫 C'est l'heure de la cantine ! La pause est comptée automatiquement.
+  </div>
 
-    <!-- STATS ROW -->
-    <div class="stats-row">
-      <div class="stat-box">
-        <div class="stat-val" id="score-today">0</div>
-        <div class="stat-lbl">pts aujourd'hui</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val" id="streak-val">0 🔥</div>
-        <div class="stat-lbl">jours de suite</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val" id="week-avg">0</div>
-        <div class="stat-lbl">moy. semaine</div>
-      </div>
-    </div>
+  <section class="timer-card">
+    <div class="timer-lbl" id="tlbl">Temps avec l'appareil aujourd'hui</div>
+    <div class="timer" id="timer">00:00:00</div>
+    <div class="badge badge-off" id="badge">Appareil retiré</div>
+  </section>
 
-    <!-- MAIN BUTTONS -->
-    <div class="btn-area">
-      <button class="btn-main btn-on" id="btn-on">
-        😊 Je mets<br>mon appareil
-      </button>
-      <button class="btn-main btn-off" id="btn-off" disabled>
-        😴 Je retire<br>mon appareil
-      </button>
-    </div>
+  <div class="stats">
+    <div class="sbox"><div class="sval" id="spts">0</div><div class="slbl">pts aujourd'hui</div></div>
+    <div class="sbox"><div class="sval" id="sstreak">0 🔥</div><div class="slbl">jours de suite</div></div>
+    <div class="sbox"><div class="sval" id="savg">0</div><div class="slbl">moy. semaine</div></div>
+  </div>
 
-    <!-- CALENDAR -->
-    <section class="section">
-      <h2 class="section-title">Calendrier du mois</h2>
-      <div class="cal-grid" id="cal-grid"></div>
+  <div class="btns">
+    <button class="btn btn-on"  id="bon">😊 Je mets<br>mon appareil</button>
+    <button class="btn btn-off" id="boff" disabled>😴 Je retire<br>mon appareil</button>
+  </div>
+
+  <div class="sec">
+    <div class="sec-ttl">Calendrier du mois</div>
+    <div class="cal-wrap">
+      <div class="cal-grid" id="calgrid"></div>
+      <div class="school-chip" id="school-chip"></div>
       <div class="legend">
-        <div class="leg-item"><span class="leg-dot" style="background:#F7C1C1"></span>Peu</div>
-        <div class="leg-item"><span class="leg-dot" style="background:#FAC775"></span>Moyen</div>
-        <div class="leg-item"><span class="leg-dot" style="background:#FAE88D"></span>Bien</div>
-        <div class="leg-item"><span class="leg-dot" style="background:#C0DD97"></span>Très bien</div>
-        <div class="leg-item"><span class="leg-dot" style="background:#639922"></span>Super</div>
-        <div class="leg-item"><span class="leg-dot" style="background:#3B6D11"></span>⭐ Parfait</div>
+        <div class="leg"><span class="ldot" style="background:#FFCDD2"></span>Peu</div>
+        <div class="leg"><span class="ldot" style="background:#FFE0B2"></span>Moyen</div>
+        <div class="leg"><span class="ldot" style="background:#FFF9C4"></span>Bien</div>
+        <div class="leg"><span class="ldot" style="background:#DCEDC8"></span>Très bien</div>
+        <div class="leg"><span class="ldot" style="background:#8BC34A"></span>Super</div>
+        <div class="leg"><span class="ldot" style="background:#388E3C"></span>⭐ Parfait</div>
       </div>
-    </section>
+    </div>
+  </div>
 
-    <!-- WEEKLY BAR -->
-    <section class="section">
-      <h2 class="section-title">Cette semaine</h2>
-      <div class="weekly-bar" id="weekly-bar"></div>
-      <div class="goal-label">Objectif : <strong id="goal-pts">18</strong> pts / jour</div>
-    </section>
+  <div class="sec">
+    <div class="sec-ttl">Cette semaine</div>
+    <div class="wbar-wrap">
+      <div class="wbar" id="wbar"></div>
+      <div class="goal-lbl">Objectif : <b>18</b> pts / jour</div>
+    </div>
+  </div>
 
-    <!-- SESSION HISTORY -->
-    <section class="section">
-      <h2 class="section-title">Sessions d'aujourd'hui</h2>
-      <div class="history-list" id="history-list">
-        <p class="empty-msg">Aucune session pour l'instant</p>
-      </div>
-    </section>
+  <div class="sec">
+    <div class="sec-ttl">Sessions d'aujourd'hui</div>
+    <div class="hist-list" id="hlist">
+      <p class="empty-msg">Aucune session pour l'instant 😊</p>
+    </div>
+  </div>
 
-  </div><!-- /#app -->
-
-  <script src="js/app.js"></script>
+</div>
+<script src="js/app.js"></script>
 </body>
 </html>

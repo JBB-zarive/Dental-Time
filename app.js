@@ -1,408 +1,272 @@
-/* ===================================
-   Chloé — Suivi appareil dentaire
-   app.js
-   =================================== */
-
+/* Chloé — Suivi appareil dentaire — app.js */
 'use strict';
 
-// ── Configuration ────────────────────────────────────────────────
-const CONFIG = {
-  storageKey:   'chloe_dental_v1',
-  dailyGoalPts: 18,
+const KEY  = 'chloe_dental_v1';
+const GOAL = 18;
 
-  // Points par heure selon la tranche horaire
-  // 0 = repas (pas de pénalité, juste 0)
-  slots: [
-    { from: 0,  to: 7,  pts: 2 },   // nuit
-    { from: 7,  to: 12, pts: 3 },   // matin actif
-    { from: 12, to: 14, pts: 0 },   // déjeuner Chloé
-    { from: 14, to: 19, pts: 3 },   // après-midi actif
-    { from: 19, to: 21, pts: 0 },   // dîner Chloé
-    { from: 21, to: 23, pts: 1 },   // soirée
-    { from: 23, to: 24, pts: 2 },   // nuit tardive
-  ],
-};
+const SLOTS = [
+  {f:0,  t:7,  p:2},
+  {f:7,  t:12, p:3},
+  {f:12, t:14, p:0},
+  {f:14, t:19, p:3},
+  {f:19, t:21, p:0},
+  {f:21, t:23, p:1},
+  {f:23, t:24, p:2},
+];
 
-const MONTHS   = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-const DAY_ABBR = ['Di','Lu','Ma','Me','Je','Ve','Sa'];
-const SCORE_COLORS = ['#F7C1C1','#FAC775','#FAE88D','#C0DD97','#639922','#3B6D11'];
+const HOLIDAYS_ZB = [
+  ['2025-07-05','2025-08-31'],
+  ['2025-10-18','2025-11-02'],
+  ['2025-12-20','2026-01-04'],
+  ['2026-02-14','2026-03-01'],
+  ['2026-04-11','2026-04-26'],
+  ['2026-05-13','2026-05-17'],
+  ['2026-07-04','2027-08-31'],
+];
 
-// ── State ─────────────────────────────────────────────────────────
-let state = { sessions: {}, wearingStart: null };
-let liveStart      = null;   // Date | null
-let timerInterval  = null;
+const FERIES = [
+  '2025-11-11','2025-12-25','2026-01-01',
+  '2026-04-06','2026-05-01','2026-05-08',
+  '2026-05-14','2026-05-25',
+];
 
-// ── Persistence ───────────────────────────────────────────────────
-function loadState() {
-  try {
-    const raw = localStorage.getItem(CONFIG.storageKey);
-    return raw ? JSON.parse(raw) : { sessions: {}, wearingStart: null };
-  } catch (e) {
-    return { sessions: {}, wearingStart: null };
-  }
+const MONTHS  = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const DAYS    = ['Di','Lu','Ma','Me','Je','Ve','Sa'];
+const S_COLS  = ['#FFCDD2','#FFE0B2','#FFF9C4','#DCEDC8','#8BC34A','#388E3C'];
+const S_CLS   = ['s0','s1','s2','s3','s4','s5'];
+
+let st   = loadSt();
+let live = st.wearingStart ? new Date(st.wearingStart) : null;
+let tid  = null;
+
+/* ── Persistence ── */
+function loadSt() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {sessions:{},wearingStart:null}; }
+  catch(e) { return {sessions:{},wearingStart:null}; }
+}
+function saveSt() { localStorage.setItem(KEY, JSON.stringify(st)); }
+
+/* ── Date helpers ── */
+function dk(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function today() { return dk(new Date()); }
+
+/* ── School calendar ── */
+function isHol(d) {
+  const k = dk(d);
+  if (FERIES.includes(k)) return true;
+  for (const [a,b] of HOLIDAYS_ZB) if (k >= a && k <= b) return true;
+  return false;
+}
+function isSchool(d) {
+  const w = d.getDay();
+  return w > 0 && w < 6 && !isHol(d);
 }
 
-function saveState() {
-  try { localStorage.setItem(CONFIG.storageKey, JSON.stringify(state)); }
-  catch (e) { console.warn('Impossible de sauvegarder :', e); }
-}
-
-// ── Date helpers ──────────────────────────────────────────────────
-function dateKey(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function todayKey() { return dateKey(new Date()); }
-
-// ── Points calculation ────────────────────────────────────────────
-function ptsPerHour(hour) {
-  for (const slot of CONFIG.slots) {
-    if (hour >= slot.from && hour < slot.to) return slot.pts;
-  }
+/* ── Points ── */
+function pph(h) {
+  for (const s of SLOTS) if (h >= s.f && h < s.t) return s.p;
   return 1;
 }
-
-function calcPoints(startMs, endMs) {
-  let pts = 0;
-  let cur = startMs;
-
-  while (cur < endMs) {
-    const d    = new Date(cur);
-    const hour = d.getHours();
-
-    // Fin de l'heure courante
-    const nextHour = new Date(cur);
-    nextHour.setMinutes(0, 0, 0);
-    nextHour.setHours(hour + 1);
-
-    const segEnd = Math.min(nextHour.getTime(), endMs);
-    const frac   = (segEnd - cur) / 3_600_000;   // fraction d'heure
-    pts += ptsPerHour(hour) * frac;
-    cur  = segEnd;
+function calcPts(s0, e0) {
+  let p = 0, c = s0;
+  while (c < e0) {
+    const h  = new Date(c).getHours();
+    const nh = new Date(c); nh.setMinutes(0,0,0); nh.setHours(h+1);
+    const se = Math.min(nh.getTime(), e0);
+    p += pph(h) * (se - c) / 3600000;
+    c  = se;
   }
-  return pts;
+  return p;
 }
 
-// ── Derived data ──────────────────────────────────────────────────
-function sessionsForKey(key) { return state.sessions[key] || []; }
+/* ── Derived ── */
+function sesForKey(k) { return st.sessions[k] || []; }
+function ptsForKey(k) { return sesForKey(k).reduce((a,s) => a + s.pts, 0); }
 
-function totalMsForKey(key) {
-  return sessionsForKey(key).reduce((a, s) => a + (s.endMs - s.startMs), 0);
-}
-
-function ptsForKey(key) {
-  return sessionsForKey(key).reduce((a, s) => a + s.pts, 0);
-}
-
-function todayTotalMs() {
-  let ms = totalMsForKey(todayKey());
-  if (liveStart) ms += Date.now() - liveStart.getTime();
+function todayMs() {
+  let ms = sesForKey(today()).reduce((a,s) => a + (s.endMs - s.startMs), 0);
+  if (live) ms += Date.now() - live.getTime();
   return ms;
 }
-
-function todayPoints() {
-  let pts = ptsForKey(todayKey());
-  if (liveStart) pts += calcPoints(liveStart.getTime(), Date.now());
-  return pts;
+function todayPts() {
+  let p = ptsForKey(today());
+  if (live) p += calcPts(live.getTime(), Date.now());
+  return p;
 }
 
-function scoreClass(pts) {
-  const pct = pts / CONFIG.dailyGoalPts;
-  if (pct < 0.35) return 'score-0';
-  if (pct < 0.55) return 'score-1';
-  if (pct < 0.70) return 'score-2';
-  if (pct < 0.85) return 'score-3';
-  if (pct < 0.97) return 'score-4';
-  return 'score-5';
+function scIdx(p) {
+  const r = p / GOAL;
+  if (r < .35) return 0; if (r < .55) return 1; if (r < .70) return 2;
+  if (r < .85) return 3; if (r < .97) return 4; return 5;
 }
 
-function scoreColorIndex(pts) {
-  const pct = pts / CONFIG.dailyGoalPts;
-  if (pct < 0.35) return 0;
-  if (pct < 0.55) return 1;
-  if (pct < 0.70) return 2;
-  if (pct < 0.85) return 3;
-  if (pct < 0.97) return 4;
-  return 5;
-}
-
-function streak() {
-  let count = 0;
-  const d   = new Date();
-  const threshold = CONFIG.dailyGoalPts * 0.8;
-
-  while (count < 366) {
-    const k   = dateKey(d);
-    const pts = k === todayKey() ? todayPoints() : ptsForKey(k);
-
-    if (pts >= threshold) {
-      count++;
-    } else if (k === todayKey()) {
-      // aujourd'hui pas encore atteint → on continue en remontant
-      d.setDate(d.getDate() - 1);
-      continue;
-    } else {
-      break;
-    }
+function getStreak() {
+  let n = 0; const d = new Date();
+  for (let i = 0; i < 366; i++) {
+    const k = dk(d), p = k === today() ? todayPts() : ptsForKey(k);
+    if (p >= GOAL * .8) n++;
+    else if (k !== today()) break;
     d.setDate(d.getDate() - 1);
   }
-  return count;
+  return n;
 }
-
 function weekAvg() {
-  let total = 0, days = 0;
-  const now = new Date();
+  let t = 0, n = 0; const now = new Date();
   for (let i = 0; i < 7; i++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const k   = dateKey(d);
-    const pts = k === todayKey() ? todayPoints() : ptsForKey(k);
-    if (state.sessions[k] || (k === todayKey() && liveStart)) {
-      total += pts;
-      days++;
-    }
+    const d = new Date(now); d.setDate(d.getDate() - i);
+    const k = dk(d), p = k === today() ? todayPts() : ptsForKey(k);
+    if (st.sessions[k] || (k === today() && live)) { t += p; n++; }
   }
-  return days > 0 ? Math.round(total / days) : 0;
+  return n ? Math.round(t / n) : 0;
+}
+function cantineAuto() {
+  if (!isSchool(new Date())) return false;
+  const k = today(), n12 = new Date(), n14 = new Date();
+  n12.setHours(12,0,0,0); n14.setHours(14,0,0,0);
+  const hasReal = sesForKey(k).some(s => s.startMs < n14.getTime() && s.endMs > n12.getTime());
+  const liveOk  = live && live.getTime() < n14.getTime() && Date.now() > n12.getTime();
+  return !hasReal && !liveOk;
 }
 
-// ── Formatting ────────────────────────────────────────────────────
+/* ── Formatting ── */
 function fmtMs(ms) {
-  const s   = Math.floor(ms / 1000);
-  const hh  = String(Math.floor(s / 3600)).padStart(2, '0');
-  const mm  = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-  const ss  = String(s % 60).padStart(2, '0');
-  return `${hh}:${mm}:${ss}`;
+  const s = Math.floor(ms/1000);
+  return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+function fmtDur(ms) {
+  const m = Math.floor(ms/60000);
+  return m < 60 ? `${m} min` : `${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`;
+}
+function fmtHM(d) {
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
-function fmtDuration(ms) {
-  const m = Math.floor(ms / 60_000);
-  if (m < 60) return `${m} min`;
-  return `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`;
-}
-
-function fmtHHMM(date) {
-  return `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
-}
-
-// ── Actions ───────────────────────────────────────────────────────
+/* ── Actions ── */
 function putOn() {
-  if (liveStart) return;
-  liveStart              = new Date();
-  state.wearingStart     = liveStart.toISOString();
-  saveState();
-  startTimer();
-  render();
+  if (live) return;
+  live = new Date(); st.wearingStart = live.toISOString();
+  saveSt(); startTid(); render();
 }
-
 function takeOff() {
-  if (!liveStart) return;
-  const endMs   = Date.now();
-  const startMs = liveStart.getTime();
-  const pts     = calcPoints(startMs, endMs);
-  const key     = dateKey(new Date(startMs));
-
-  if (!state.sessions[key]) state.sessions[key] = [];
-  state.sessions[key].push({
-    startMs,
-    endMs,
-    pts: Math.round(pts * 100) / 100,
-  });
-
-  state.wearingStart = null;
-  liveStart          = null;
-  saveState();
-  stopTimer();
-  render();
+  if (!live) return;
+  const e = Date.now(), s = live.getTime(), p = calcPts(s, e), k = dk(new Date(s));
+  if (!st.sessions[k]) st.sessions[k] = [];
+  st.sessions[k].push({ startMs:s, endMs:e, pts: Math.round(p*100)/100 });
+  st.wearingStart = null; live = null;
+  saveSt(); stopTid(); render();
 }
 
-// ── Timer ─────────────────────────────────────────────────────────
-function startTimer() {
-  stopTimer();
-  timerInterval = setInterval(tickTimer, 1000);
+/* ── Timer ── */
+function startTid() { stopTid(); tid = setInterval(tick, 1000); }
+function stopTid()  { if (tid) { clearInterval(tid); tid = null; } }
+function tick() {
+  document.getElementById('timer').textContent = fmtMs(todayMs());
+  document.getElementById('spts').textContent  = Math.round(todayPts());
 }
 
-function stopTimer() {
-  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-}
+/* ── Render ── */
+function render() {
+  const now = new Date(), h = now.getHours(), w = !!live;
 
-function tickTimer() {
-  document.getElementById('timer').textContent       = fmtMs(todayTotalMs());
-  document.getElementById('score-today').textContent = Math.round(todayPoints());
-}
-
-// ── Render helpers ────────────────────────────────────────────────
-function renderHeader() {
-  const now = new Date();
-  document.getElementById('header-date').textContent =
+  document.getElementById('hdate').textContent =
     `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
-}
 
-function renderStatus() {
-  const wearing = !!liveStart;
+  document.getElementById('bon').disabled  = w;
+  document.getElementById('boff').disabled = !w;
 
-  document.getElementById('btn-on').disabled  = wearing;
-  document.getElementById('btn-off').disabled = !wearing;
+  const badge = document.getElementById('badge');
+  badge.textContent = w ? 'Appareil en bouche ✓' : 'Appareil retiré';
+  badge.className   = 'badge ' + (w ? 'badge-on' : 'badge-off');
 
-  const badge = document.getElementById('status-badge');
-  badge.textContent = wearing ? 'Appareil en bouche ✓' : 'Appareil retiré';
-  badge.className   = `status-badge ${wearing ? 'badge-on' : 'badge-off'}`;
-
-  document.getElementById('status-label').textContent = wearing
+  document.getElementById('tlbl').textContent = w
     ? "Aujourd'hui + session en cours"
     : "Temps avec l'appareil aujourd'hui";
 
-  document.getElementById('timer').textContent       = fmtMs(todayTotalMs());
-  document.getElementById('score-today').textContent = Math.round(todayPoints());
-  document.getElementById('streak-val').textContent  = `${streak()} 🔥`;
-  document.getElementById('week-avg').textContent    = weekAvg();
+  document.getElementById('timer').textContent   = fmtMs(todayMs());
+  document.getElementById('spts').textContent    = Math.round(todayPts());
+  document.getElementById('sstreak').textContent = getStreak() + ' 🔥';
+  document.getElementById('savg').textContent    = weekAvg();
+
+  const cb = document.getElementById('cbanner');
+  cb.style.display = (isSchool(now) && h >= 12 && h < 14 && !w) ? 'block' : 'none';
+
+  const sc = document.getElementById('school-chip');
+  if (isHol(now))       { sc.textContent = '🏖️ Vacances — profite bien !'; sc.style.display = 'block'; }
+  else if (isSchool(now)) { sc.textContent = '🏫 Jour d\'école · cantine 12h-14h auto'; sc.style.display = 'block'; }
+  else                   { sc.style.display = 'none'; }
+
+  renderCal(); renderWeek(); renderHist();
 }
 
-function renderCalendar() {
-  const now         = new Date();
-  const year        = now.getFullYear();
-  const month       = now.getMonth();
-  const firstDay    = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  let html = DAY_ABBR.map(d => `<div class="cal-day-name">${d}</div>`).join('');
-
-  // Empty cells before day 1
-  for (let i = 0; i < firstDay; i++) html += '<div class="cal-cell empty"></div>';
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date    = new Date(year, month, d);
-    const key     = dateKey(date);
-    const isToday = key === todayKey();
-    const isPast  = date < now && !isToday;
-
-    let cls  = 'cal-cell';
-    let pts  = 0;
-    let tip  = '';
-
-    if (!isPast && !isToday) {
-      cls += ' future';
-    } else {
-      pts  = isToday ? todayPoints() : ptsForKey(key);
-      tip  = `${Math.round(pts)} pts`;
-
-      if (pts > 0 || state.sessions[key]) {
-        cls += ` ${scoreClass(pts)}`;
-      } else {
-        cls += ' no-data';
-      }
-    }
-
-    if (isToday) cls += ' today-ring';
-
-    html += `<div class="${cls}" title="${tip}">${d}</div>`;
+function renderCal() {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  const fd  = new Date(y, m, 1).getDay();
+  const dim = new Date(y, m+1, 0).getDate();
+  let html  = DAYS.map(d => `<div class="cdn">${d}</div>`).join('');
+  for (let i = 0; i < fd; i++) html += '<div class="cc empty"></div>';
+  for (let d = 1; d <= dim; d++) {
+    const date = new Date(y, m, d), k = dk(date), isT = k === today();
+    const fut  = date > now && !isT;
+    let cls = 'cc', p = 0;
+    if (fut) { cls += ' future'; }
+    else { p = isT ? todayPts() : ptsForKey(k); cls += ' ' + (p > 0 || st.sessions[k] ? S_CLS[scIdx(p)] : 'nodata'); }
+    if (isT) cls += ' tr';
+    html += `<div class="${cls}">${d}</div>`;
   }
-
-  document.getElementById('cal-grid').innerHTML = html;
+  document.getElementById('calgrid').innerHTML = html;
 }
 
-function renderWeekly() {
-  const now = new Date();
-  let   html = '';
-
+function renderWeek() {
+  const now = new Date(); let html = '';
   for (let i = 6; i >= 0; i--) {
-    const d   = new Date(now);
-    d.setDate(d.getDate() - i);
-    const key  = dateKey(d);
-    const pts  = key === todayKey() ? todayPoints() : ptsForKey(key);
-    const pct  = Math.min(pts / CONFIG.dailyGoalPts, 1);
-    const h    = Math.max(4, Math.round(pct * 58));
-    const ci   = scoreColorIndex(pts);
-    const col  = SCORE_COLORS[ci];
-
-    html += `
-      <div class="w-col">
-        <div class="w-bar" style="height:${h}px; background:${col};"></div>
-        <div class="w-lbl">${DAY_ABBR[d.getDay()]}</div>
-      </div>`;
+    const d  = new Date(now); d.setDate(d.getDate() - i);
+    const k  = dk(d), p = k === today() ? todayPts() : ptsForKey(k);
+    const pct = Math.min(p / GOAL, 1), ht = Math.max(4, Math.round(pct * 58));
+    html += `<div class="wcol"><div class="wb" style="height:${ht}px;background:${S_COLS[scIdx(p)]}"></div><div class="wl">${DAYS[d.getDay()]}</div></div>`;
   }
-
-  document.getElementById('weekly-bar').innerHTML = html;
-  document.getElementById('goal-pts').textContent = CONFIG.dailyGoalPts;
+  document.getElementById('wbar').innerHTML = html;
 }
 
-function renderHistory() {
-  const list     = document.getElementById('history-list');
-  const sessions = sessionsForKey(todayKey());
-
-  if (!sessions.length && !liveStart) {
-    list.innerHTML = '<p class="empty-msg">Aucune session pour l\'instant</p>';
+function renderHist() {
+  const el   = document.getElementById('hlist');
+  const ses  = sesForKey(today());
+  const canto = cantineAuto();
+  if (!ses.length && !live && !canto) {
+    el.innerHTML = '<p class="empty-msg">Aucune session pour l\'instant 😊</p>';
     return;
   }
-
   let html = '';
-
-  sessions.forEach(s => {
-    const start    = new Date(s.startMs);
-    const end      = new Date(s.endMs);
-    const dur      = fmtDuration(s.endMs - s.startMs);
-    const ptsRound = Math.round(s.pts * 10) / 10;
-    const ptsCls   = s.pts >= 2 ? 'pts-good' : s.pts >= 0.5 ? 'pts-meh' : 'pts-none';
-
-    html += `
-      <div class="hist-item">
-        <span class="hist-time">${fmtHHMM(start)} → ${fmtHHMM(end)}</span>
-        <span class="hist-dur">${dur}</span>
-        <span class="hist-pts ${ptsCls}">+${ptsRound} pts</span>
-      </div>`;
+  ses.forEach(s => {
+    const a = new Date(s.startMs), b = new Date(s.endMs);
+    const pr = Math.round(s.pts * 10) / 10;
+    const cls = s.pts >= 2 ? 'hp-good' : s.pts >= .5 ? 'hp-meh' : 'hp-none';
+    html += `<div class="hi"><span class="ht">${fmtHM(a)} → ${fmtHM(b)}</span><span class="hd">${fmtDur(s.endMs-s.startMs)}</span><span class="hp ${cls}">+${pr} pts</span></div>`;
   });
-
-  if (liveStart) {
-    html += `
-      <div class="hist-item live">
-        <span class="hist-time">${fmtHHMM(liveStart)} → en cours…</span>
-        <span class="hist-dur" style="color:#7F77DD;">⏱</span>
-        <span class="hist-pts pts-live">en cours</span>
-      </div>`;
-  }
-
-  list.innerHTML = html;
+  if (canto) html += `<div class="hi cantine"><span class="ht">🏫 12:00 → 14:00</span><span class="hd">Cantine</span><span class="hp hp-cant">auto</span></div>`;
+  if (live)  html += `<div class="hi live"><span class="ht">${fmtHM(live)} → en cours…</span><span class="hd" style="color:#7F77DD">⏱</span><span class="hp hp-live">en cours</span></div>`;
+  el.innerHTML = html;
 }
 
-// ── Full render ───────────────────────────────────────────────────
-function render() {
-  renderHeader();
-  renderStatus();
-  renderCalendar();
-  renderWeekly();
-  renderHistory();
-}
-
-// ── Init ──────────────────────────────────────────────────────────
+/* ── Init ── */
 function init() {
-  state = loadState();
-  if (!state.sessions)    state.sessions    = {};
-  if (!state.wearingStart) state.wearingStart = null;
+  st   = loadSt();
+  if (!st.sessions)     st.sessions     = {};
+  if (!st.wearingStart) st.wearingStart = null;
+  live = st.wearingStart ? new Date(st.wearingStart) : null;
 
-  // Restore live session if page was closed while wearing
-  if (state.wearingStart) {
-    liveStart = new Date(state.wearingStart);
-  }
-
-  // Wire up buttons
-  document.getElementById('btn-on').addEventListener('click',  putOn);
-  document.getElementById('btn-off').addEventListener('click', takeOff);
+  document.getElementById('bon').addEventListener('click',  putOn);
+  document.getElementById('boff').addEventListener('click', takeOff);
 
   render();
+  if (live) startTid();
+  setInterval(render, 60000);
 
-  if (liveStart) startTimer();
-
-  // Re-render at midnight to flip the day
-  scheduleMidnightRefresh();
-}
-
-function scheduleMidnightRefresh() {
-  const now       = new Date();
-  const midnight  = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
-  const msUntil   = midnight.getTime() - now.getTime();
-  setTimeout(() => { render(); scheduleMidnightRefresh(); }, msUntil);
+  (function midnight() {
+    const n = new Date(); n.setDate(n.getDate()+1); n.setHours(0,0,5,0);
+    setTimeout(() => { render(); midnight(); }, n - new Date());
+  })();
 }
 
 document.addEventListener('DOMContentLoaded', init);
